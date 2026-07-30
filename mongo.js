@@ -24,22 +24,23 @@ const phonebookSchema = new mongoose.Schema({
 const Phonebook = mongoose.model('Phonebook', phonebookSchema)
 
 if (process.argv.length > 3) {
-    
-    const phonebook = new Phonebook({
-      name: namePhone,
-      number: numberPhone,
-    })
-    
-    phonebook.save().then(result => {
-      console.log(`added ${namePhone} number ${numberPhone} to phonebook`)
-      mongoose.connection.close()
-    })
+
+  const phonebook = new Phonebook({
+    name: namePhone,
+    number: numberPhone,
+  })
+
+  phonebook.save().then(result => {
+    console.log(result)
+    console.log(`added ${namePhone} number ${numberPhone} to phonebook`)
+    mongoose.connection.close()
+  })
 } else {
-    console.log('phonebook:')
-    Phonebook.find({}).then(result => {
-      result.forEach(phonebook => {
-        console.log(phonebook['name'], phonebook['number'])
-      })
-      mongoose.connection.close()
+  console.log('phonebook:')
+  Phonebook.find({}).then(result => {
+    result.forEach(phonebook => {
+      console.log(phonebook['name'], phonebook['number'])
     })
+    mongoose.connection.close()
+  })
 }
