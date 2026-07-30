@@ -67,7 +67,7 @@ app.get('/', (req, res) => {
 });
 
 
-app.get('/api/persons', (req, res) => {
+app.get('/api/persons', (req, res, next) => {
   // res.json(persons);
   Person.find({}).then(result => {
     res.json(result)
@@ -76,7 +76,7 @@ app.get('/api/persons', (req, res) => {
 });
 
 
-app.get('/api/persons/:id', (req, res) => {
+app.get('/api/persons/:id', (req, res, next) => {
   const id = req.params.id;
   // const person = persons.find(person => person.id === id);
   const person = Person.findById(id).then(selectedPerson => {
@@ -98,7 +98,7 @@ app.get('/info', (req, res) => {
 //   res.send('<p>' + new Date() + '</p>');
 });
 
-app.delete('/api/persons/:id', (req, res) => {
+app.delete('/api/persons/:id', (req, res, next) => {
   const id = req.params.id;
   // persons = persons.filter(person => person.id !== id);
   // res.status(204).end();
@@ -114,7 +114,7 @@ const generateId = () => {
   return String(maxId)
 }
 
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', (req, res, next) => {
   const body = req.body;
 
   console.log(body);
@@ -123,7 +123,29 @@ app.post('/api/persons', (req, res) => {
   if (!body.name) {
     return res.status(400).json({ error: 'name missing' })
   }
+  if (!body.number){
+    return res.status(400).json({
+      error: 'number missing'
+    })
+  } 
+  
+  Person.find({ name: body.name }).then(result => {
+    if (result.length > 0) {
+      return res.status(400).json({
+        error: 'name must be unique'
+      })
+    }
+  })
+  .catch(error => next(error))
 
+  // if (persons.find(listPerson => listPerson.name === body.name))
+
+  // {
+  //   console.log(body.name);
+  //   return res.status(400).json({
+  //     error: 'name must be unique'
+  //   })
+  // } 
   const person = new Person({
     name: body.name,
     number: body.number
@@ -133,6 +155,7 @@ app.post('/api/persons', (req, res) => {
     res.json(savedPerson)
   })
   .catch(error => next(error))
+
 
 //   console.log(person);
 
@@ -160,6 +183,28 @@ app.post('/api/persons', (req, res) => {
   // console.log(newPerson);
   // res.json(newPerson)
   // res.json(note);
+})
+
+
+app.put('/api/persons/:id', (req, res, next) => {
+  const { name, number } = req.body
+
+  const id = req.params.id
+
+  Person.findById(id)
+    .then(selectedPerson => {
+      if (!selectedPerson) {
+        return res.status(404).end()
+      }
+
+      selectedPerson.name = name
+      selectedPerson.number = number
+
+      return selectedPerson.save().then((updatedPerson) => {
+        res.json(updatedPerson)
+      })
+    })
+    .catch(error => next(error))
 })
 
 
