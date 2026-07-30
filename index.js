@@ -1,18 +1,42 @@
 const express = require('express');
-const app = express();
 const morgan = require('morgan')
-const cors = require('cors');
+// const cors = require('cors');
 require('dotenv').config()
 const Person = require('./models/person')
 
+const app = express();
 
+const requestLogger = (request, response, next) => {
+  console.log('Method:', request.method)
+  console.log('Path:  ', request.path)
+  console.log('Body:  ', request.body)
+  console.log('---')
+  next()
+}
+
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message)
+
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  } else if (error.name === 'ValidationError') {
+    return response.status(400).json({ error: error.message })
+  }
+
+  next(error)
+}
+
+
+app.use(express.static('dist'))
 app.use(express.json())
+// app.use(cors())
+app.use(requestLogger)
+
+
 // morgan.token('body', (req) => {
 //     return Object.keys(req.body).length ? JSON.stringify(req.body) : '';
 // });
 // app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'));
-app.use(cors())
-app.use(express.static('dist'))
 
 
 // let persons = [
@@ -42,12 +66,15 @@ app.get('/', (req, res) => {
   res.send('<h1>Hello World!</h1>');
 });
 
+
 app.get('/api/persons', (req, res) => {
   // res.json(persons);
   Person.find({}).then(result => {
     res.json(result)
   })
+  .catch(error => next(error))
 });
+
 
 app.get('/api/persons/:id', (req, res) => {
   const id = req.params.id;
@@ -55,6 +82,7 @@ app.get('/api/persons/:id', (req, res) => {
   const person = Person.findById(id).then(selectedPerson => {
     res.json(selectedPerson);
   })
+  .catch(error => next(error))
 //   res.json(person);
   // if (person) {
   //   res.json(person);
@@ -104,6 +132,7 @@ app.post('/api/persons', (req, res) => {
   person.save().then(savedPerson => {
     res.json(savedPerson)
   })
+  .catch(error => next(error))
 
 //   console.log(person);
 
@@ -132,6 +161,15 @@ app.post('/api/persons', (req, res) => {
   // res.json(newPerson)
   // res.json(note);
 })
+
+
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: 'unknown endpoint' })
+}
+
+
+app.use(unknownEndpoint)
+app.use(errorHandler)
 
 
 const PORT = 3001;
